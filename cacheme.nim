@@ -44,7 +44,7 @@ proc makeTuple(args: NimNode): NimNode =
     case arg.kind
     of nnkIdentDefs:
       for j in 0 ..< arg.len - 2: # skip last child and return type
-        result.add arg[j] # get the values#arg[arg.len - 2] # get the type! #arg[j]
+        result.add arg[j] # get the values, type will be constructed from `typeof`
     else:
       doAssert false, "Unsupported node kind so far: " & $args[i].kind
 
