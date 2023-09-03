@@ -1,0 +1,64 @@
+* cacheMe please
+
+A very basic caching helper for procedures:
+
+#+begin_src nim
+import cacheme
+
+type
+  Bar = object
+    name: string
+    a, b: int
+
+proc foo(a, b: int): Bar {.cacheMe: "/tmp/test_cache".} =
+  result = Bar(a: a, b: b, name: "Hehe")
+
+echo foo(1, 5)
+echo foo(5, 3)
+echo foo(1, 5)
+echo foo(8, 12)
+#+end_src
+
+It caches function calls of ~foo~ with the arguments ~a, b~ over
+multiple runs of the same program. It arose from a need in my code
+where I have some function that needs to perform a lengthy
+calculation, but caching it is fine. Instead of writing similar
+caching code in each case, I decided to just write a short library to
+take care of it generally.
+
+The idea is we construct an HDF5 file with the given prefix path given
+to the pragma. It effectively wraps the procedure body in the
+following skeleton:
+#+begin_src nim
+template injectOldBody(args, retTyp, path, body: untyped): untyped {.dirty.} =
+  var theCache {.global.} = initCache[typeof args, retTyp](path)
+  if args.inCache(theCache, path):
+    result = args.getFromCache(theCache)
+  else:
+    body
+    result.addToCache(args, theCache, path)
+#+end_src
+That means we construct a global (!) ~Table[K, V]~ to store the
+arguments and return values at runtime. That table is serialized to
+disk to an HDF5 file between accesses using ~nimhdf5~.
+
+Feel free to write the files to ~/dev/shm~ if you're on linux and
+don't want to actually suffer the IO costs of writing to disk.
+
+*One word of caution*: If your procedure contains an explicit ~return~
+statement, caching won't work correctly! And for obvious reasons do
+not use this for functions that depend on some runtime state either!
+
+Finally, not every possible Nim type is supported, but the
+serialization of ~nimhdf5~ supports
+[[https://github.com/Vindaar/TimepixAnalysis/blob/master/Analysis/ingrid/mcmc_limit_calculation.nim#L113-L165][some pretty complex objects]]. You may have to / want to write a
+custom serialization hook for specific types, like [[https://github.com/Vindaar/TimepixAnalysis/blob/master/Analysis/ingrid/mcmc_limit_calculation.nim#L203-L239][here]].
+
+** Dependencies
+
+The only dependency is ~nimhdf5~, because the caching is done by
+serializing the arguments and return values to an HDF5 file. Other
+backends could be added trivially (as long as they have serialization support).
+#+begin_src sh
+nimble install nimhdf5
+#+end_src
