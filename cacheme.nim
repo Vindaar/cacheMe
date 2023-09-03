@@ -63,4 +63,5 @@ macro cacheMe*(path: string, fn: untyped): untyped =
   # 5. replace the old body by the new and emit the new procedure
   result = fn
   result[6] = body
-  echo result.repr
+  when defined(debug):
+    echo result.repr
