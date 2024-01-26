@@ -19,12 +19,15 @@ echo foo(1, 5)
 echo foo(8, 12)
 #+end_src
 
-It caches function calls of ~foo~ with the arguments ~a, b~ over
-multiple runs of the same program. It arose from a need in my code
+It caches function calls of ~foo~ with the arguments ~a, b~ *over
+multiple runs of the same program*. It arose from a need in my code
 where I have some function that needs to perform a lengthy
 calculation, but caching it is fine. Instead of writing similar
 caching code in each case, I decided to just write a short library to
-take care of it generally.
+take care of it generally. Note that the cache also works well for
+multiple processes (e.g. via [[https://github.com/c-blake/cligen/blob/master/cligen/procpool.nim][cligen's procpool]]) accessing the same
+file by trying to merge changes between different processes writing
+potentially different data (see more below).
 
 The idea is we construct an HDF5 file with the given prefix path given
 to the pragma. It effectively wraps the procedure body in the
@@ -62,3 +65,18 @@ backends could be added trivially (as long as they have serialization support).
 #+begin_src sh
 nimble install nimhdf5
 #+end_src
+
+** On multiprocessing
+
+Multiple _threads_ is a different matter obviously and theoretical
+races are obviously possible. However, if the procedure is a pure
+function in the sense of same input ⇒ same output and if you are fine
+if sometimes a value is computed twice before the cache is
+synchronized again, it works well in practice!
+
+** Similar libraries
+
+- [[https://github.com/andreaferretti/memo][memo]] by @andreaferretti performs memoization of functions in a
+  similar manner, however only persistent between a *single program run*.
+  On the other hand it can also handle recursive functions. Different
+  use cases require different solutions! 
