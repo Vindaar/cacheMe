@@ -48,7 +48,7 @@ proc makeTuple(args: NimNode): NimNode =
     else:
       doAssert false, "Unsupported node kind so far: " & $args[i].kind
 
-macro cacheMe*(path: string, fn: untyped): untyped =
+macro cacheMe*(path: string, fn: typed): untyped =
   ## WARNING: This may have unintended side effects if your procedure has explicit `return`
   ## statements, as we do not scan the body for those!
   doAssert path.kind == nnkStrLit
@@ -61,7 +61,7 @@ macro cacheMe*(path: string, fn: untyped): untyped =
   # 4. Inject the old body into our caching template
   let body = getAst(injectOldBody(argsTup, retTyp, h5name, fn[6]))
   # 5. replace the old body by the new and emit the new procedure
-  result = fn
+  result = copyNimTree(fn)
   result[6] = body
   when defined(debug):
     echo result.repr
