@@ -63,7 +63,12 @@ The only dependency is ~nimhdf5~, because the caching is done by
 serializing the arguments and return values to an HDF5 file. Other
 backends could be added trivially (as long as they have serialization support).
 #+begin_src sh
-nimble install nimhdf5
+# The persistence test compiles with -d:H5_FUTURE for the versioned HDF5 API.
+# On Ubuntu, install the native HDF5 library first:
+sudo apt-get install libhdf5-dev
+# From the cacheMe checkout:
+nimble install -y
+nimble test
 #+end_src
 
 ** On multiprocessing
